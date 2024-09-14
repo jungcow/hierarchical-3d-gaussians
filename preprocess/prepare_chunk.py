@@ -43,6 +43,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     ## A custom matching file is generated for the chunk, this one is based on distance 
+    # camera들의 center를 image의 qvec과 tvec을 이용하여 구한 후, KNN을 통해 각 카메라 당 가장 거리가 가까운 camera를
+    # matching.txt 파일에 추가하는 식으로 구성
     make_colmap_custom_matcher_args = [
         "python", "preprocess/make_colmap_custom_matcher_distance.py",
         "--base_dir", os.path.join(args.raw_chunk, "sparse", "0"), 

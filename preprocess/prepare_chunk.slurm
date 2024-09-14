@@ -2,13 +2,14 @@
 
 ## YOU SHOULD PUT YOUR SLURM PARAMETERS HERE (GPU, ACCOUNT, ETC ...)
 
-#SBATCH -A hzb@a100
-#SBATCH -C a100
+#SBATCH -A jw@3090
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:2
 #SBATCH --cpus-per-task=20
 #SBATCH --time=3:00:00
+
+export CUDA_VISIBLE_DEVICES=2,3
 
 RAW_CHUNK=$1
 OUT_CHUNK=$2

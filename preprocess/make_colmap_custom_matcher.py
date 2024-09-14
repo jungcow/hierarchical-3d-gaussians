@@ -23,21 +23,21 @@ def decimal_coords(coords, ref):
         decimal_degrees = -decimal_degrees
     return decimal_degrees
 
-def image_coordinates(image_name):
-    with open(os.path.join(args.image_path, image_name), 'rb') as src:
-        img = Image(src)
-    if img.has_exif:
-        try:
-            img.gps_longitude
-            coords = [
-                decimal_coords(img.gps_latitude, img.gps_latitude_ref),
-                decimal_coords(img.gps_longitude, img.gps_longitude_ref)
-            ]
-            return coords
-        except AttributeError:
-            return None
-    else:
-        return None    
+# def image_coordinates(image_name):
+#     with open(os.path.join(args.image_path, image_name), 'rb') as src:
+#         img = Image(src)
+#     if img.has_exif:
+#         try:
+#             img.gps_longitude
+#             coords = [
+#                 decimal_coords(img.gps_latitude, img.gps_latitude_ref),
+#                 decimal_coords(img.gps_longitude, img.gps_longitude_ref)
+#             ]
+#             return coords
+#         except AttributeError:
+#             return None
+#     else:
+#         return None    
     
 def get_matches(img_name, cam_center, cam_nbrs, img_names_gps):
     _, indices = cam_nbrs.kneighbors(cam_center[None])
@@ -71,22 +71,25 @@ if __name__ == '__main__':
     parser.add_argument('--n_seq_matches_per_view', default=0, type=int)
     parser.add_argument('--n_quad_matches_per_view', default=10, type=int)
     parser.add_argument('--n_loop_closure_match_per_view', default=5, type=int)
-    parser.add_argument('--loop_matches', default=[], type=int) 
+    parser.add_argument('--loop_matches', default=[], nargs="+", type=int) 
     parser.add_argument('--n_gps_neighbours', default=25, type=int)
     args = parser.parse_args()
 
 
     loop_matches = np.array(args.loop_matches, dtype=np.int64).reshape(-1, 2)
+    print("Loop matches: ", loop_matches)
 
     loop_rel_matches = np.arange(0, args.n_loop_closure_match_per_view)
     loop_rel_matches = 2**loop_rel_matches
     loop_rel_matches = np.concatenate([-loop_rel_matches[::-1], np.array([0]), loop_rel_matches])
 
     image_files_organised = find_images_names(args.image_path)
+    print("len organised image files: ", len(image_files_organised))
 
     cam_folder_list = []
     cam_folder_list = os.listdir(f"{args.image_path}")
-
+#    cam_folder_list = [d for d in cam_folder_list if os.path.isdir(os.path.join(args.image_path, d))]
+    print("cam_folder_list: ", cam_folder_list)
 
     matches_str = []
     def add_match(cam_id, matched_cam_id, current_image_file, matched_frame_id):
@@ -125,21 +128,21 @@ if __name__ == '__main__':
 
 
     ## Add GPS matches
-    if args.n_gps_neighbours > 0:
-        all_img_names = []
-        for ind, cam in enumerate(image_files_organised):
-            all_img_names += [os.path.join(cam['dir'], img_name) for img_name in cam['images']]
+    # if args.n_gps_neighbours > 0:
+    #     all_img_names = []
+    #     for ind, cam in enumerate(image_files_organised):
+    #         all_img_names += [os.path.join(cam['dir'], img_name) for img_name in cam['images']]
 
-        all_cam_centers = [image_coordinates(img_name) for img_name in all_img_names]
-        # all_cam_centers = Parallel(n_jobs=-1, backend="threading")(
-        #     delayed(image_coordinates)(img_name) for img_name in all_img_names
-        # )
-        img_names_gps = [img_name for img_name, cam_center in zip(all_img_names, all_cam_centers) if cam_center is not None]
-        cam_centers_gps =  [cam_center for cam_center in all_cam_centers if cam_center is not None]
-        cam_centers = np.array(cam_centers_gps)
-        cam_nbrs = NearestNeighbors(n_neighbors=args.n_gps_neighbours).fit(cam_centers) if cam_centers.size else []
+    #     all_cam_centers = [image_coordinates(img_name) for img_name in all_img_names]
+    #     # all_cam_centers = Parallel(n_jobs=-1, backend="threading")(
+    #     #     delayed(image_coordinates)(img_name) for img_name in all_img_names
+    #     # )
+    #     img_names_gps = [img_name for img_name, cam_center in zip(all_img_names, all_cam_centers) if cam_center is not None]
+    #     cam_centers_gps =  [cam_center for cam_center in all_cam_centers if cam_center is not None]
+    #     cam_centers = np.array(cam_centers_gps)
+    #     cam_nbrs = NearestNeighbors(n_neighbors=args.n_gps_neighbours).fit(cam_centers) if cam_centers.size else []
 
-        matches_str += [get_matches(img_name, cam_center, cam_nbrs, img_names_gps) for img_name, cam_center in zip(img_names_gps, cam_centers)]
+    #     matches_str += [get_matches(img_name, cam_center, cam_nbrs, img_names_gps) for img_name, cam_center in zip(img_names_gps, cam_centers)]
 
 
     ## Remove duplicate matches

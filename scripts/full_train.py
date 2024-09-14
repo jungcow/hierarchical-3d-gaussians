@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--masks_dir', default="")
     parser.add_argument('--depths_dir', default="")
     parser.add_argument('--chunks_dir', default="")
+    parser.add_argument('--iterations', default=30000)
     
     parser.add_argument('--output_dir', default="")
     parser.add_argument('--use_slurm', action="store_true", default=False)
@@ -59,6 +60,8 @@ if __name__ == '__main__':
     parser.add_argument('--keep_running', action="store_true", default=False, help="Keep running even if a chunk processing fails")
     args = parser.parse_args()
     print(args.extra_training_args)
+
+    print("Iterations: ", args.iterations)
 
     os_name = platform.system()
     f_path = Path(__file__)
@@ -79,7 +82,7 @@ if __name__ == '__main__':
     slurm_args = ["sbatch"]
 
     ## First step is coarse optimization to generate a scaffold that will be used later.
-    if args.skip_if_exists and os.path.exists(os.path.join(output_dir, "scaffold/point_cloud/iteration_30000/point_cloud.ply")):
+    if args.skip_if_exists and os.path.exists(os.path.join(output_dir, f"scaffold/point_cloud/iteration_{args.iterations}/point_cloud.ply")):
         print("Skipping coarse")
     else:
         if args.use_slurm:
@@ -127,7 +130,7 @@ if __name__ == '__main__':
         "python", "-u train_single.py",
         "--save_iterations -1",
         f"-i {images_dir}", f"-d {depths_dir}",
-        f"--scaffold_file {output_dir}/scaffold/point_cloud/iteration_30000",
+        f"--scaffold_file {output_dir}/scaffold/point_cloud/iteration_{args.iterations}",
         "--skybox_locked" 
     ])
     if masks_dir != "":
@@ -142,7 +145,7 @@ if __name__ == '__main__':
         "python", "-u train_post.py",
         "--iterations 15000", "--feature_lr 0.0005",
         "--opacity_lr 0.01", "--scaling_lr 0.001", "--save_iterations -1",
-        f"-i {images_dir}",  f"--scaffold_file {output_dir}/scaffold/point_cloud/iteration_30000",
+        f"-i {images_dir}",  f"--scaffold_file {output_dir}/scaffold/point_cloud/iteration_{args.iterations}",
     ])
     if masks_dir != "":
         post_opt_chunk_args += " --alpha_masks " + masks_dir
@@ -187,10 +190,10 @@ if __name__ == '__main__':
             try:
                 subprocess.run(
                 hierarchy_creator_args + " ".join([
-                        os.path.join(trained_chunk, "point_cloud/iteration_30000/point_cloud.ply"),
+                        os.path.join(trained_chunk, f"point_cloud/iteration_{args.iterations}/point_cloud.ply"),
                         source_chunk,
                         trained_chunk,
-                        os.path.join(output_dir, "scaffold/point_cloud/iteration_30000")
+                        os.path.join(output_dir, f"scaffold/point_cloud/iteration_{args.iterations}")
                     ]),
                     shell=True, check=True, text=True
                 )
