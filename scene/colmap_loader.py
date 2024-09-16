@@ -166,7 +166,9 @@ def read_intrinsics_text(path):
                 elems = line.split()
                 camera_id = int(elems[0])
                 model = elems[1]
-                assert model == "PINHOLE", "While the loader support other types, the rest of the code assumes PINHOLE"
+                #! For generally adapting fisheye images
+                assert model in ["PINHOLE", "SIMPLE_PINHOLE", "OPENCV_FISHEYE", "RADIAL_FISHEYE", "SIMPLE_RADIAL_FISHEYE"], \
+                    "While the loader support other types, the rest of the code assumes PINHOLE"
                 width = int(elems[2])
                 height = int(elems[3])
                 params = np.array(tuple(map(float, elems[4:])))

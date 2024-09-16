@@ -21,7 +21,9 @@ import torch
 import torch.nn.functional as F
 
 class Camera(nn.Module):
-    def __init__(self, resolution, colmap_id, R, T, FoVx, FoVy, depth_params, primx, primy, image, alpha_mask,
+    def __init__(self, resolution, colmap_id, R, T, FoVx, FoVy, depth_params, primx, primy, 
+                 camera_model,
+                 image, alpha_mask,
                  invdepthmap,
                  image_name, uid,
                  trans=np.array([0.0, 0.0, 0.0]), scale=1.0, data_device = "cuda",
@@ -36,6 +38,7 @@ class Camera(nn.Module):
         self.FoVx = FoVx
         self.FoVy = FoVy
         self.image_name = image_name
+        self.camera_model=camera_model
 
         try:
             self.data_device = torch.device(data_device)
@@ -97,6 +100,7 @@ class Camera(nn.Module):
         self.full_proj_transform = (self.world_view_transform.unsqueeze(0).bmm(self.projection_matrix.unsqueeze(0))).squeeze(0).to(self.data_device)
         self.camera_center = self.world_view_transform.inverse()[3, :3].to(self.data_device)
 
+# TODO: For generally adapting distorted images, fix this class too. 
 class MiniCam:
     def __init__(self, width, height, fovy, fovx, znear, zfar, world_view_transform, full_proj_transform):
         self.image_width = width

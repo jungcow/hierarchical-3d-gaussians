@@ -17,6 +17,21 @@ from utils.sh_utils import eval_sh
 from diff_gaussian_rasterization import _C
 import numpy as np
 
+
+CAMERA_MODELS = {
+    "SIMPLE_PINHOLE": 0,
+    "PINHOLE": 1,
+    "SIMPLE_RADIAL": 2,
+    "RADIAL": 3,
+    "OPENCV": 4,
+    "OPENCV_FISHEYE": 5,
+    "FULL_OPENCV": 6,
+    "FOV": 7,
+    "SIMPLE_RADIAL_FISHEYE": 8,
+    "RADIAL_FISHEYE": 9,
+    "THIN_PRISM_FISHEYE": 10,
+}
+
 def render(
         viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, scaling_modifier = 1.0, override_color = None, indices = None, use_trained_exp=False):
     """
@@ -46,6 +61,7 @@ def render(
         image_width=int(viewpoint_camera.image_width),
         tanfovx=tanfovx,
         tanfovy=tanfovy,
+        camera_model=CAMERA_MODELS[viewpoint_camera.camera_model],
         bg=bg_color,
         scale_modifier=scaling_modifier,
         viewmatrix=viewpoint_camera.world_view_transform,
@@ -58,7 +74,7 @@ def render(
         render_indices=render_indices,
         parent_indices=parent_indices,
         interpolation_weights=interpolation_weights,
-        num_node_kids=num_siblings
+        num_node_kids=num_siblings,
     )
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
@@ -249,6 +265,7 @@ def render_post(
         image_width=int(viewpoint_camera.image_width),
         tanfovx=tanfovx,
         tanfovy=tanfovy,
+        camera_model=CAMERA_MODELS[viewpoint_camera.camera_model],
         bg=bg_color,
         scale_modifier=scaling_modifier,
         viewmatrix=viewpoint_camera.world_view_transform,
@@ -321,6 +338,7 @@ def render_coarse(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.T
         image_width=int(viewpoint_camera.image_width),
         tanfovx=tanfovx,
         tanfovy=tanfovy,
+        camera_model=CAMERA_MODELS[viewpoint_camera.camera_model],
         bg=bg_color,
         scale_modifier=scaling_modifier,
         viewmatrix=viewpoint_camera.world_view_transform,
@@ -333,7 +351,7 @@ def render_coarse(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.T
         render_indices=render_indices,
         parent_indices=parent_indices,
         interpolation_weights=interpolation_weights,
-        num_node_kids=num_siblings
+        num_node_kids=num_siblings,
     )
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)

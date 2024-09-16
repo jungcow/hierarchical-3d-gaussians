@@ -41,6 +41,7 @@ class CameraInfo(NamedTuple):
     width: int
     height: int
     is_test: bool
+    camera_model: str #! For generally adapting fisheye images
 
 class SceneInfo(NamedTuple):
     point_cloud: BasicPointCloud
@@ -102,8 +103,17 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, depths_params, images_fold
             focal_length_y = intr.params[1]
             FovY = focal2fov(focal_length_y, height)
             FovX = focal2fov(focal_length_x, width)
+        elif intr.model=="OPENCV_FISHEYE" or intr.model == "RADIAL_FISHEYE" or intr.model == "SIMPLE_RADIAL_FISHEYE":
+            #! For generally adapting fisheye images
+            primx = float(intr.params[2]) / width
+            primy = float(intr.params[3]) / height
+            focal_length_x = intr.params[0]
+            focal_length_y = intr.params[1]
+            FovY = focal2fov(focal_length_y, height)
+            FovX = focal2fov(focal_length_x, width)
         else:
-            assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"
+            #! For generally adapting fisheye images
+            assert False, "Colmap camera model not handled: [Jungcow] also handle fisheye datasets (PINHOLE, SIMPLE_PINHOLE, or FISHEYE cameras) supported!"
 
         n_remove = len(extr.name.split('.')[-1]) + 1
         depth_params = None
@@ -127,7 +137,8 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, depths_params, images_fold
 
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, primx=primx, primy=primy, depth_params=depth_params,
                               image_path=image_path, mask_path=mask_path, depth_path=depth_path, image_name=image_name, 
-                              width=width, height=height, is_test=image_name in test_cam_names_list)
+                              width=width, height=height, is_test=image_name in test_cam_names_list,
+                              camera_model=intr.model) #! For generally adapting fisheye images
         cam_infos.append(cam_info)
     sys.stdout.write('\n')
     return cam_infos
@@ -182,11 +193,13 @@ def readColmapSceneInfo(path, images, masks, depths, eval, train_test_exp, llffh
         cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")
         cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")
         cam_extrinsics = read_extrinsics_binary(cameras_extrinsic_file)
+        #! Need to modify Camera model configuration for Fisheye Adaptation (Camera())
         cam_intrinsics = read_intrinsics_binary(cameras_intrinsic_file)
     except:
         cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.txt")
         cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.txt")
         cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
+        #! Need to modify Camera model configuration for Fisheye Adaptation
         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
 
     depth_params_file = os.path.join(path, "sparse/0", "depth_params.json")
@@ -247,6 +260,7 @@ def readColmapSceneInfo(path, images, masks, depths, eval, train_test_exp, llffh
     reading_dir = "images" if images == None else images
     masks_reading_dir = masks if masks == "" else os.path.join(path, masks)
 
+    #! Need to modify Camera model configuration for Fisheye Adaptation
     cam_infos_unsorted = readColmapCameras(
         cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, depths_params=depths_params, 
         images_folder=os.path.join(path, reading_dir), masks_folder=masks_reading_dir,
